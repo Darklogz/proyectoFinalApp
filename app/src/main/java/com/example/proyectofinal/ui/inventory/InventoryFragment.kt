@@ -2,10 +2,14 @@ package com.example.proyectofinal.ui.inventory
 
 import android.os.Bundle
 import android.text.Editable
+import android.text.InputType
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -44,16 +48,52 @@ class InventoryFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        adapter = InventoryAdapter(emptyList()) { product ->
-            // Handle product click (e.g., edit)
-        }
+        adapter = InventoryAdapter(
+            products = emptyList(),
+            onEditStockClick = { product ->
+                showEditStockDialog(product)
+            },
+            onItemClick = { product ->
+                // Handle general item click if needed
+            }
+        )
         binding.rvProducts.layoutManager = LinearLayoutManager(context)
         binding.rvProducts.adapter = adapter
+    }
+
+    private fun showEditStockDialog(product: Product) {
+        val input = EditText(requireContext())
+        input.inputType = InputType.TYPE_CLASS_NUMBER
+        input.hint = "Nueva cantidad"
+        input.setText(product.stock.toString())
+
+        AlertDialog.Builder(requireContext())
+            .setTitle("Resurtir Producto")
+            .setMessage("Ingresa la cantidad actual de ${product.name}")
+            .setView(input)
+            .setPositiveButton("Guardar") { _, _ ->
+                val newStock = input.text.toString().toIntOrNull()
+                if (newStock != null) {
+                    updateProductStock(product, newStock)
+                } else {
+                    Toast.makeText(context, "Cantidad no válida", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun updateProductStock(product: Product, newStock: Int) {
+        lifecycleScope.launch {
+            db.appDao().updateProduct(product.copy(stock = newStock))
+            Toast.makeText(context, "Stock actualizado", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun fetchProducts() {
         lifecycleScope.launch {
             db.appDao().getAllProducts().collectLatest { products ->
+                if (_binding == null) return@collectLatest
                 allProducts = products
                 adapter.updateList(allProducts)
                 updateSummary()

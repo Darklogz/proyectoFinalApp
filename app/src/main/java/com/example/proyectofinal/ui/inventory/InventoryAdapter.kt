@@ -8,6 +8,7 @@ import com.example.proyectofinal.models.Product
 
 class InventoryAdapter(
     private var products: List<Product>,
+    private val onEditStockClick: (Product) -> Unit,
     private val onItemClick: (Product) -> Unit
 ) : RecyclerView.Adapter<InventoryAdapter.ViewHolder>() {
 
@@ -24,6 +25,7 @@ class InventoryAdapter(
         holder.binding.tvProductPrice.text = "$${product.price}"
         holder.binding.tvProductStock.text = product.stock.toString()
 
+        holder.binding.btnEditStock.setOnClickListener { onEditStockClick(product) }
         holder.itemView.setOnClickListener { onItemClick(product) }
     }
 

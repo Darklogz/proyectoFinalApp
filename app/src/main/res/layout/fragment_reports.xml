@@ -64,15 +64,8 @@
         android:id="@+id/rvReports"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tabLayout"
         tools:listitem="@layout/item_sale_report" />
-
-    <include
-        android:id="@+id/bottomNavigation"
-        layout="@layout/layout_bottom_navigation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

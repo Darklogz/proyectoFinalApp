@@ -15,7 +15,7 @@ import com.example.proyectofinal.databinding.FragmentSalesBinding
 import com.example.proyectofinal.models.Product
 import com.example.proyectofinal.models.Sale
 import com.example.proyectofinal.models.SaleItem
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class SalesFragment : Fragment() {
@@ -26,6 +26,7 @@ class SalesFragment : Fragment() {
     private lateinit var adapter: SalesAdapter
     private val saleItemsList = mutableListOf<SaleItem>()
     private var allProducts = listOf<Product>()
+    private var selectedProduct: Product? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -53,27 +54,47 @@ class SalesFragment : Fragment() {
 
     private fun fetchProducts() {
         lifecycleScope.launch {
-            db.appDao().getAllProducts().collectLatest { products ->
-                allProducts = products
-                val productNames = allProducts.map { it.name }
-                val searchAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, productNames)
-                binding.etSearchProduct.setAdapter(searchAdapter)
-            }
+            allProducts = db.appDao().getAllProducts().first()
+            val productNames = allProducts.map { it.name }
+            val searchAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, productNames)
+            binding.etSearchProduct.setAdapter(searchAdapter)
         }
     }
 
     private fun setupSearch() {
         binding.etSearchProduct.setOnItemClickListener { parent, _, position, _ ->
             val selectedName = parent.getItemAtPosition(position) as String
-            val product = allProducts.find { it.name == selectedName }
-            product?.let { addProductToSale(it) }
-            binding.etSearchProduct.setText("")
+            selectedProduct = allProducts.find { it.name == selectedName }
+        }
+    }
+
+    private fun setupListeners() {
+        binding.btnMenu.setOnClickListener { findNavController().navigateUp() }
+        
+        binding.btnAddItem.setOnClickListener {
+            selectedProduct?.let { 
+                addProductToSale(it)
+                binding.etSearchProduct.setText("")
+                selectedProduct = null
+            } ?: run {
+                Toast.makeText(context, "Selecciona un producto de la lista", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        binding.btnFinalize.setOnClickListener {
+            if (saleItemsList.isEmpty()) {
+                Toast.makeText(context, "No hay productos en la venta", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            finalizeSale()
         }
     }
 
     private fun addProductToSale(product: Product) {
-        if (product.stock <= 0) {
-            Toast.makeText(context, "Producto sin stock", Toast.LENGTH_SHORT).show()
+        val currentInCart = saleItemsList.find { it.productId == product.id }?.quantity ?: 0
+        
+        if (product.stock <= currentInCart) {
+            Toast.makeText(context, "Stock insuficiente (${product.stock} disponibles)", Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -99,47 +120,38 @@ class SalesFragment : Fragment() {
         binding.tvTotal.text = "$${String.format("%.2f", total)}"
     }
 
-    private fun setupListeners() {
-        binding.btnMenu.setOnClickListener { findNavController().navigateUp() }
-        
-        binding.btnFinalize.setOnClickListener {
-            if (saleItemsList.isEmpty()) return@setOnClickListener
-            finalizeSale()
-        }
-    }
-
     private fun finalizeSale() {
-        val subtotal = saleItemsList.sumOf { it.price * it.quantity }
-        val tax = subtotal * 0.10
-        val total = subtotal + tax
-        
-        val sale = Sale(
-            subtotal = subtotal,
-            tax = tax,
-            total = total,
-            paymentMethod = "Efectivo"
-        )
-
         lifecycleScope.launch {
-            // Insert Sale and get ID
-            val saleIdLong = db.appDao().insertSale(sale)
-            val saleId = saleIdLong.toInt()
+            try {
+                val subtotal = saleItemsList.sumOf { it.price * it.quantity }
+                val tax = subtotal * 0.10
+                val total = subtotal + tax
+                
+                val sale = Sale(subtotal = subtotal, tax = tax, total = total, paymentMethod = "Efectivo")
+                val saleId = db.appDao().insertSale(sale).toInt()
 
-            // Prepare items with saleId
-            val itemsToInsert = saleItemsList.map { it.copy(saleId = saleId) }
-            db.appDao().insertSaleItems(itemsToInsert)
+                val itemsToInsert = saleItemsList.map { it.copy(saleId = saleId) }
+                db.appDao().insertSaleItems(itemsToInsert)
 
-            // Update Stock
-            saleItemsList.forEach { item ->
-                val product = db.appDao().getProductById(item.productId)
-                product?.let {
-                    val updatedProduct = it.copy(stock = it.stock - item.quantity)
-                    db.appDao().updateProduct(updatedProduct)
+                // Actualizar stock localmente
+                saleItemsList.forEach { item ->
+                    val prod = db.appDao().getProductById(item.productId)
+                    prod?.let {
+                        db.appDao().updateProduct(it.copy(stock = it.stock - item.quantity))
+                    }
                 }
-            }
 
-            Toast.makeText(context, "Venta realizada con éxito", Toast.LENGTH_SHORT).show()
-            findNavController().navigateUp()
+                Toast.makeText(context, "¡Venta realizada con éxito!", Toast.LENGTH_LONG).show()
+                
+                // Reiniciar interfaz para nueva venta sin cerrar la app
+                saleItemsList.clear()
+                adapter.updateList(saleItemsList)
+                calculateTotals()
+                fetchProducts() // Recargar stock actualizado para la búsqueda
+                
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         }
     }
 

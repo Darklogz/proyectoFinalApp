@@ -125,7 +125,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         app:cardCornerRadius="12dp"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation">
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <TextView
             android:id="@+id/tvInventorySummary"
@@ -133,15 +133,8 @@
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:padding="12dp"
-            android:text="85 productos | $12.4k valor"
+            android:text="0 productos | $0.0k valor"
             android:textColor="@color/text_hint" />
     </com.google.android.material.card.MaterialCardView>
-
-    <include
-        android:id="@+id/bottomNavigation"
-        layout="@layout/layout_bottom_navigation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

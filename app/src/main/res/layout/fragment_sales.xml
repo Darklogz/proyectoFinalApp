@@ -48,24 +48,42 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="@id/headerBackground" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilSearch"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+    <LinearLayout
+        android:id="@+id/searchContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginHorizontal="16dp"
         android:layout_marginTop="16dp"
-        app:hintEnabled="false"
-        app:layout_constraintTop_toBottomOf="@id/headerBackground"
-        app:startIconDrawable="@drawable/ic_search">
+        android:orientation="horizontal"
+        app:layout_constraintTop_toBottomOf="@id/headerBackground">
 
-        <AutoCompleteTextView
-            android:id="@+id/etSearchProduct"
-            android:layout_width="match_parent"
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilSearch"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:hint="Buscar producto..."
-            android:inputType="text" />
-    </com.google.android.material.textfield.TextInputLayout>
+            android:layout_weight="1"
+            app:hintEnabled="false"
+            app:startIconDrawable="@drawable/ic_search">
+
+            <AutoCompleteTextView
+                android:id="@+id/etSearchProduct"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Buscar producto..."
+                android:inputType="text" />
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAddItem"
+            style="@style/Widget.MaterialComponents.Button.Icon"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginStart="8dp"
+            app:cornerRadius="8dp"
+            app:icon="@drawable/ic_add"
+            app:iconPadding="0dp" />
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvSaleItems"
@@ -73,7 +91,7 @@
         android:layout_height="0dp"
         android:layout_marginTop="8dp"
         app:layout_constraintBottom_toTopOf="@id/summaryCard"
-        app:layout_constraintTop_toBottomOf="@id/tilSearch"
+        app:layout_constraintTop_toBottomOf="@id/searchContainer"
         tools:listitem="@layout/item_sale_product" />
 
     <com.google.android.material.card.MaterialCardView
@@ -81,7 +99,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         app:cardElevation="8dp"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation">
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -162,12 +180,5 @@
 
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
-
-    <include
-        android:id="@+id/bottomNavigation"
-        layout="@layout/layout_bottom_navigation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

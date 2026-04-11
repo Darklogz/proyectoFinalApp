@@ -9,6 +9,10 @@
         android:icon="@drawable/ic_sales"
         android:title="Ventas" />
     <item
+        android:id="@+id/mainMenuFragment"
+        android:icon="@drawable/ic_home"
+        android:title="Home" />
+    <item
         android:id="@+id/reportsFragment"
         android:icon="@drawable/ic_reports"
         android:title="Reportes" />
