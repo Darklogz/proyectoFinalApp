@@ -177,7 +177,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:padding="16dp"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation">
+        app:layout_constraintBottom_toBottomOf="parent">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
@@ -200,12 +200,5 @@
             app:icon="@drawable/ic_save" />
 
     </LinearLayout>
-
-    <include
-        android:id="@+id/bottomNavigation"
-        layout="@layout/layout_bottom_navigation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

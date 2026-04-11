@@ -43,7 +43,7 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@id/bottomNavigation"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintTop_toBottomOf="@id/headerBackground">
 
         <LinearLayout
@@ -91,28 +91,28 @@
                 android:rowCount="2">
 
                 <include
-                    android:id="@+id/btnInventory"
+                    android:id="@+id/btnNavInventory"
                     layout="@layout/item_menu_button"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1" />
 
                 <include
-                    android:id="@+id/btnSales"
+                    android:id="@+id/btnNavSales"
                     layout="@layout/item_menu_button"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1" />
 
                 <include
-                    android:id="@+id/btnEntries"
+                    android:id="@+id/btnNavEntries"
                     layout="@layout/item_menu_button"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_columnWeight="1" />
 
                 <include
-                    android:id="@+id/btnReports"
+                    android:id="@+id/btnNavReports"
                     layout="@layout/item_menu_button"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -120,7 +120,7 @@
                     android:layout_marginTop="8dp" />
 
                 <include
-                    android:id="@+id/btnStats"
+                    android:id="@+id/btnNavStats"
                     layout="@layout/item_menu_button"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -128,7 +128,7 @@
                     android:layout_marginTop="8dp" />
 
                 <include
-                    android:id="@+id/btnConfig"
+                    android:id="@+id/btnNavConfig"
                     layout="@layout/item_menu_button"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -183,12 +183,5 @@
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
-
-    <include
-        android:id="@+id/bottomNavigation"
-        layout="@layout/layout_bottom_navigation"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

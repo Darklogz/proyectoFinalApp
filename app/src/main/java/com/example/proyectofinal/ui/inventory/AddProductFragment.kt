@@ -7,16 +7,18 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.example.proyectofinal.database.AppDatabase
 import com.example.proyectofinal.databinding.FragmentAddProductBinding
 import com.example.proyectofinal.models.Product
-import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 
 class AddProductFragment : Fragment() {
 
     private var _binding: FragmentAddProductBinding? = null
     private val binding get() = _binding!!
-    private lateinit var db: FirebaseFirestore
+    private lateinit var db: AppDatabase
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -28,7 +30,7 @@ class AddProductFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        db = FirebaseFirestore.getInstance()
+        db = AppDatabase.getDatabase(requireContext())
 
         setupCategorySpinner()
 
@@ -68,14 +70,11 @@ class AddProductFragment : Fragment() {
             category = category
         )
 
-        db.collection("products").add(product)
-            .addOnSuccessListener {
-                Toast.makeText(context, "Producto guardado", Toast.LENGTH_SHORT).show()
-                findNavController().navigateUp()
-            }
-            .addOnFailureListener {
-                Toast.makeText(context, "Error al guardar", Toast.LENGTH_SHORT).show()
-            }
+        lifecycleScope.launch {
+            db.appDao().insertProduct(product)
+            Toast.makeText(context, "Producto guardado", Toast.LENGTH_SHORT).show()
+            findNavController().navigateUp()
+        }
     }
 
     override fun onDestroyView() {

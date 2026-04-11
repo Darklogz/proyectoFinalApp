@@ -1,9 +1,11 @@
 package com.example.proyectofinal.models
 
-import com.google.firebase.firestore.DocumentId
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
+@Entity(tableName = "products")
 data class Product(
-    @DocumentId val id: String = "",
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val name: String = "",
     val price: Double = 0.0,
     val stock: Int = 0,

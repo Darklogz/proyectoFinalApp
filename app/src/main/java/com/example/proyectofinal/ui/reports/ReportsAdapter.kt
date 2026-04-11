@@ -6,6 +6,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.proyectofinal.databinding.ItemSaleReportBinding
 import com.example.proyectofinal.models.Sale
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 class ReportsAdapter(
@@ -23,9 +24,10 @@ class ReportsAdapter(
         val sale = sales[position]
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
         
-        holder.binding.tvSaleId.text = "#${sale.id.takeLast(6).uppercase()}"
-        holder.binding.tvSaleDate.text = sdf.format(sale.timestamp.toDate())
-        holder.binding.tvSaleItemsSummary.text = "${sale.items.size} productos vendidos"
+        holder.binding.tvSaleId.text = "#${sale.id.toString().padStart(6, '0')}"
+        holder.binding.tvSaleDate.text = sdf.format(Date(sale.timestamp))
+        // Note: Summary of items would require fetching them from DB or having a count field in Sale
+        holder.binding.tvSaleItemsSummary.text = "Venta finalizada"
         holder.binding.tvSaleTotal.text = "$${String.format("%.2f", sale.total)}"
     }
 

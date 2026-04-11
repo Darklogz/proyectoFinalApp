@@ -5,19 +5,21 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.proyectofinal.database.AppDatabase
 import com.example.proyectofinal.databinding.FragmentReportsBinding
 import com.example.proyectofinal.models.Sale
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import com.google.android.material.tabs.TabLayout
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class ReportsFragment : Fragment() {
 
     private var _binding: FragmentReportsBinding? = null
     private val binding get() = _binding!!
-    private lateinit var db: FirebaseFirestore
+    private lateinit var db: AppDatabase
     private lateinit var adapter: ReportsAdapter
     private var allSales = listOf<Sale>()
 
@@ -31,7 +33,7 @@ class ReportsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        db = FirebaseFirestore.getInstance()
+        db = AppDatabase.getDatabase(requireContext())
 
         setupRecyclerView()
         setupTabs()
@@ -59,20 +61,17 @@ class ReportsFragment : Fragment() {
     }
 
     private fun fetchSales() {
-        db.collection("sales")
-            .orderBy("timestamp", Query.Direction.DESCENDING)
-            .addSnapshotListener { value, error ->
-                if (error != null) return@addSnapshotListener
-                allSales = value?.toObjects(Sale::class.java) ?: emptyList()
+        lifecycleScope.launch {
+            db.appDao().getAllSales().collectLatest { sales ->
+                allSales = sales
                 filterSales(binding.tabLayout.selectedTabPosition)
             }
+        }
     }
 
     private fun filterSales(position: Int) {
-        // Simple filtering logic for demo purposes
-        // In a real app, you'd filter by date ranges
         val filtered = when (position) {
-            0 -> allSales // Diario (showing all for now)
+            0 -> allSales // Diario
             1 -> allSales // Semanal
             2 -> allSales // Mensual
             else -> allSales

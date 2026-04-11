@@ -7,21 +7,24 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.proyectofinal.database.AppDatabase
 import com.example.proyectofinal.databinding.FragmentSalesBinding
 import com.example.proyectofinal.models.Product
 import com.example.proyectofinal.models.Sale
 import com.example.proyectofinal.models.SaleItem
-import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class SalesFragment : Fragment() {
 
     private var _binding: FragmentSalesBinding? = null
     private val binding get() = _binding!!
-    private lateinit var db: FirebaseFirestore
+    private lateinit var db: AppDatabase
     private lateinit var adapter: SalesAdapter
-    private val saleItems = mutableListOf<SaleItem>()
+    private val saleItemsList = mutableListOf<SaleItem>()
     private var allProducts = listOf<Product>()
 
     override fun onCreateView(
@@ -34,7 +37,7 @@ class SalesFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        db = FirebaseFirestore.getInstance()
+        db = AppDatabase.getDatabase(requireContext())
 
         setupRecyclerView()
         setupSearch()
@@ -43,17 +46,19 @@ class SalesFragment : Fragment() {
     }
 
     private fun setupRecyclerView() {
-        adapter = SalesAdapter(saleItems)
+        adapter = SalesAdapter(saleItemsList)
         binding.rvSaleItems.layoutManager = LinearLayoutManager(context)
         binding.rvSaleItems.adapter = adapter
     }
 
     private fun fetchProducts() {
-        db.collection("products").get().addOnSuccessListener { value ->
-            allProducts = value.toObjects(Product::class.java)
-            val productNames = allProducts.map { it.name }
-            val searchAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, productNames)
-            binding.etSearchProduct.setAdapter(searchAdapter)
+        lifecycleScope.launch {
+            db.appDao().getAllProducts().collectLatest { products ->
+                allProducts = products
+                val productNames = allProducts.map { it.name }
+                val searchAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, productNames)
+                binding.etSearchProduct.setAdapter(searchAdapter)
+            }
         }
     }
 
@@ -72,20 +77,20 @@ class SalesFragment : Fragment() {
             return
         }
 
-        val existingItem = saleItems.find { it.productId == product.id }
+        val existingItem = saleItemsList.find { it.productId == product.id }
         if (existingItem != null) {
-            val index = saleItems.indexOf(existingItem)
-            saleItems[index] = existingItem.copy(quantity = existingItem.quantity + 1)
+            val index = saleItemsList.indexOf(existingItem)
+            saleItemsList[index] = existingItem.copy(quantity = existingItem.quantity + 1)
         } else {
-            saleItems.add(SaleItem(product.id, product.name, 1, product.price))
+            saleItemsList.add(SaleItem(productId = product.id, productName = product.name, quantity = 1, price = product.price))
         }
         
-        adapter.updateList(saleItems)
+        adapter.updateList(saleItemsList)
         calculateTotals()
     }
 
     private fun calculateTotals() {
-        val subtotal = saleItems.sumOf { it.price * it.quantity }
+        val subtotal = saleItemsList.sumOf { it.price * it.quantity }
         val tax = subtotal * 0.10
         val total = subtotal + tax
 
@@ -98,36 +103,43 @@ class SalesFragment : Fragment() {
         binding.btnMenu.setOnClickListener { findNavController().navigateUp() }
         
         binding.btnFinalize.setOnClickListener {
-            if (saleItems.isEmpty()) return@setOnClickListener
+            if (saleItemsList.isEmpty()) return@setOnClickListener
             finalizeSale()
         }
     }
 
     private fun finalizeSale() {
-        val total = saleItems.sumOf { it.price * it.quantity } * 1.10
+        val subtotal = saleItemsList.sumOf { it.price * it.quantity }
+        val tax = subtotal * 0.10
+        val total = subtotal + tax
+        
         val sale = Sale(
-            items = saleItems.toList(),
+            subtotal = subtotal,
+            tax = tax,
             total = total,
-            paymentMethod = "Efectivo" // Simplified for now
+            paymentMethod = "Efectivo"
         )
 
-        db.runTransaction { transaction ->
-            // Save Sale
-            val saleRef = db.collection("sales").document()
-            transaction.set(saleRef, sale)
+        lifecycleScope.launch {
+            // Insert Sale and get ID
+            val saleIdLong = db.appDao().insertSale(sale)
+            val saleId = saleIdLong.toInt()
+
+            // Prepare items with saleId
+            val itemsToInsert = saleItemsList.map { it.copy(saleId = saleId) }
+            db.appDao().insertSaleItems(itemsToInsert)
 
             // Update Stock
-            saleItems.forEach { item ->
-                val productRef = db.collection("products").document(item.productId)
-                val snapshot = transaction.get(productRef)
-                val currentStock = snapshot.getLong("stock") ?: 0
-                transaction.update(productRef, "stock", currentStock - item.quantity)
+            saleItemsList.forEach { item ->
+                val product = db.appDao().getProductById(item.productId)
+                product?.let {
+                    val updatedProduct = it.copy(stock = it.stock - item.quantity)
+                    db.appDao().updateProduct(updatedProduct)
+                }
             }
-        }.addOnSuccessListener {
-            Toast.makeText(context, "Venta realizada", Toast.LENGTH_SHORT).show()
+
+            Toast.makeText(context, "Venta realizada con éxito", Toast.LENGTH_SHORT).show()
             findNavController().navigateUp()
-        }.addOnFailureListener {
-            Toast.makeText(context, "Error: ${it.message}", Toast.LENGTH_SHORT).show()
         }
     }
 

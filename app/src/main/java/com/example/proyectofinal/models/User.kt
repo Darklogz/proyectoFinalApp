@@ -1,11 +1,14 @@
 package com.example.proyectofinal.models
 
-import com.google.firebase.firestore.DocumentId
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
+@Entity(tableName = "users")
 data class User(
-    @DocumentId val id: String = "",
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val firebaseUid: String = "", // Link to Firebase Auth UID
     val name: String = "",
     val email: String = "",
-    val role: String = "Vendedor", // Admin, Vendedor, Almacén
+    val role: String = "Vendedor",
     val active: Boolean = true
 )

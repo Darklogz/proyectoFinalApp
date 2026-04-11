@@ -6,17 +6,21 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.proyectofinal.R
+import com.example.proyectofinal.database.AppDatabase
 import com.example.proyectofinal.databinding.FragmentUsersBinding
 import com.example.proyectofinal.models.User
-import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class UsersFragment : Fragment() {
 
     private var _binding: FragmentUsersBinding? = null
     private val binding get() = _binding!!
-    private lateinit var db: FirebaseFirestore
+    private lateinit var db: AppDatabase
     private lateinit var adapter: UsersAdapter
 
     override fun onCreateView(
@@ -29,7 +33,7 @@ class UsersFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        db = FirebaseFirestore.getInstance()
+        db = AppDatabase.getDatabase(requireContext())
 
         setupRecyclerView()
         fetchUsers()
@@ -39,11 +43,9 @@ class UsersFragment : Fragment() {
     private fun setupRecyclerView() {
         adapter = UsersAdapter(emptyList(), 
             onEditClick = { user ->
-                // Handle edit user
                 Toast.makeText(context, "Editar: ${user.name}", Toast.LENGTH_SHORT).show()
             },
             onDeleteClick = { user ->
-                // Handle delete user
                 deleteUser(user)
             }
         )
@@ -52,18 +54,18 @@ class UsersFragment : Fragment() {
     }
 
     private fun fetchUsers() {
-        db.collection("users").addSnapshotListener { value, error ->
-            if (error != null) return@addSnapshotListener
-            val usersList = value?.toObjects(User::class.java) ?: emptyList()
-            adapter.updateList(usersList)
+        lifecycleScope.launch {
+            db.appDao().getAllUsers().collectLatest { usersList ->
+                adapter.updateList(usersList)
+            }
         }
     }
 
     private fun deleteUser(user: User) {
-        db.collection("users").document(user.id).delete()
-            .addOnSuccessListener {
-                Toast.makeText(context, "Usuario eliminado", Toast.LENGTH_SHORT).show()
-            }
+        lifecycleScope.launch {
+            db.appDao().deleteUser(user)
+            Toast.makeText(context, "Usuario eliminado", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun setupListeners() {
@@ -71,8 +73,7 @@ class UsersFragment : Fragment() {
             findNavController().navigateUp()
         }
         binding.btnAddUser.setOnClickListener {
-            // Logic to add user (can reuse register or a dialog)
-            Toast.makeText(context, "Función para agregar usuario", Toast.LENGTH_SHORT).show()
+            findNavController().navigate(R.id.action_usersFragment_to_addUserFragment)
         }
     }
 

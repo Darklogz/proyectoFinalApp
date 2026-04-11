@@ -7,18 +7,21 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.proyectofinal.R
+import com.example.proyectofinal.database.AppDatabase
 import com.example.proyectofinal.databinding.FragmentInventoryBinding
 import com.example.proyectofinal.models.Product
-import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class InventoryFragment : Fragment() {
 
     private var _binding: FragmentInventoryBinding? = null
     private val binding get() = _binding!!
-    private lateinit var db: FirebaseFirestore
+    private lateinit var db: AppDatabase
     private lateinit var adapter: InventoryAdapter
     private var allProducts = listOf<Product>()
 
@@ -32,7 +35,7 @@ class InventoryFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        db = FirebaseFirestore.getInstance()
+        db = AppDatabase.getDatabase(requireContext())
 
         setupRecyclerView()
         fetchProducts()
@@ -49,12 +52,12 @@ class InventoryFragment : Fragment() {
     }
 
     private fun fetchProducts() {
-        db.collection("products").addSnapshotListener { value, error ->
-            if (error != null) return@addSnapshotListener
-            
-            allProducts = value?.toObjects(Product::class.java) ?: emptyList()
-            adapter.updateList(allProducts)
-            updateSummary()
+        lifecycleScope.launch {
+            db.appDao().getAllProducts().collectLatest { products ->
+                allProducts = products
+                adapter.updateList(allProducts)
+                updateSummary()
+            }
         }
     }
 

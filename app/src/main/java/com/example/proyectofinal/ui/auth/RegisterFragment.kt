@@ -6,18 +6,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import com.example.proyectofinal.database.AppDatabase
 import com.example.proyectofinal.databinding.FragmentRegisterBinding
 import com.example.proyectofinal.models.User
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.launch
 
 class RegisterFragment : Fragment() {
 
     private var _binding: FragmentRegisterBinding? = null
     private val binding get() = _binding!!
     private lateinit var auth: FirebaseAuth
-    private lateinit var db: FirebaseFirestore
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -30,7 +31,6 @@ class RegisterFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         auth = FirebaseAuth.getInstance()
-        db = FirebaseFirestore.getInstance()
 
         binding.btnBack.setOnClickListener {
             findNavController().navigateUp()
@@ -60,14 +60,16 @@ class RegisterFragment : Fragment() {
             auth.createUserWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
-                        val userId = auth.currentUser?.uid ?: ""
-                        val newUser = User(id = userId, name = name, email = email)
+                        val firebaseUid = auth.currentUser?.uid ?: ""
+                        val newUser = User(firebaseUid = firebaseUid, name = name, email = email)
                         
-                        db.collection("users").document(userId).set(newUser)
-                            .addOnSuccessListener {
-                                Toast.makeText(context, "Usuario registrado", Toast.LENGTH_SHORT).show()
-                                findNavController().navigateUp()
-                            }
+                        lifecycleScope.launch {
+                            val db = AppDatabase.getDatabase(requireContext())
+                            db.appDao().insertUser(newUser)
+                            
+                            Toast.makeText(context, "Usuario registrado localmente", Toast.LENGTH_SHORT).show()
+                            findNavController().navigateUp()
+                        }
                     } else {
                         Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                     }

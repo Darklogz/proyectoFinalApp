@@ -6,10 +6,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.proyectofinal.R
+import com.example.proyectofinal.database.AppDatabase
 import com.example.proyectofinal.databinding.FragmentLoginBinding
+import com.example.proyectofinal.models.User
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 class LoginFragment : Fragment() {
 
@@ -29,6 +33,11 @@ class LoginFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         auth = FirebaseAuth.getInstance()
 
+        // Check if already logged in
+        if (auth.currentUser != null) {
+            findNavController().navigate(R.id.action_loginFragment_to_mainMenuFragment)
+        }
+
         binding.btnLogin.setOnClickListener {
             val email = binding.etEmail.text.toString().trim()
             val password = binding.etPassword.text.toString().trim()
@@ -41,7 +50,7 @@ class LoginFragment : Fragment() {
             auth.signInWithEmailAndPassword(email, password)
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
-                        findNavController().navigate(R.id.action_loginFragment_to_mainMenuFragment)
+                        syncUserToLocal(email)
                     } else {
                         Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_SHORT).show()
                     }
@@ -50,6 +59,18 @@ class LoginFragment : Fragment() {
 
         binding.tvRegister.setOnClickListener {
             findNavController().navigate(R.id.action_loginFragment_to_registerFragment)
+        }
+    }
+
+    private fun syncUserToLocal(email: String) {
+        lifecycleScope.launch {
+            val db = AppDatabase.getDatabase(requireContext())
+            val existingUser = db.appDao().getUserByEmail(email)
+            if (existingUser == null) {
+                val firebaseUid = auth.currentUser?.uid ?: ""
+                db.appDao().insertUser(User(firebaseUid = firebaseUid, email = email, name = "Usuario", role = "Administrador"))
+            }
+            findNavController().navigate(R.id.action_loginFragment_to_mainMenuFragment)
         }
     }
 

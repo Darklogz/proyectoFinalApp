@@ -1,20 +1,23 @@
 package com.example.proyectofinal.models
 
-import com.google.firebase.Timestamp
-import com.google.firebase.firestore.DocumentId
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
+@Entity(tableName = "sales")
 data class Sale(
-    @DocumentId val id: String = "",
-    val items: List<SaleItem> = emptyList(),
+    @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val subtotal: Double = 0.0,
     val tax: Double = 0.0,
     val total: Double = 0.0,
     val paymentMethod: String = "",
-    val timestamp: Timestamp = Timestamp.now()
+    val timestamp: Long = System.currentTimeMillis()
 )
 
+@Entity(tableName = "sale_items")
 data class SaleItem(
-    val productId: String = "",
+    @PrimaryKey(autoGenerate = true) val itemId: Int = 0,
+    val saleId: Int = 0,
+    val productId: Int = 0,
     val productName: String = "",
     val quantity: Int = 0,
     val price: Double = 0.0

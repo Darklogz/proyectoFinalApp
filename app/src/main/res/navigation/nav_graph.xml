@@ -93,6 +93,16 @@
         android:id="@+id/usersFragment"
         android:name="com.example.proyectofinal.ui.users.UsersFragment"
         android:label="Usuarios"
-        tools:layout="@layout/fragment_users" />
+        tools:layout="@layout/fragment_users">
+        <action
+            android:id="@+id/action_usersFragment_to_addUserFragment"
+            app:destination="@id/addUserFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/addUserFragment"
+        android:name="com.example.proyectofinal.ui.users.AddUserFragment"
+        android:label="Nuevo Usuario"
+        tools:layout="@layout/fragment_add_user" />
 
 </navigation>
