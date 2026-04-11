@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
@@ -40,6 +41,7 @@ class MainMenuFragment : Fragment() {
         setupRecyclerView()
         setupSummary()
         setupButtons()
+        setupUserActions()
     }
 
     private fun setupRecyclerView() {
@@ -129,6 +131,24 @@ class MainMenuFragment : Fragment() {
                 findNavController().navigate(R.id.action_mainMenuFragment_to_usersFragment)
             }
         }
+    }
+
+    private fun setupUserActions() {
+        binding?.ivUser?.setOnClickListener {
+            showLogoutDialog()
+        }
+    }
+
+    private fun showLogoutDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Cerrar Sesión")
+            .setMessage("¿Estás seguro de que deseas salir?")
+            .setPositiveButton("Sí, salir") { _, _ ->
+                auth.signOut()
+                findNavController().navigate(R.id.loginFragment)
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
     }
 
     override fun onDestroyView() {
