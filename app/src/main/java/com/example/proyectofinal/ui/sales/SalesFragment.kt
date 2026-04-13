@@ -21,7 +21,8 @@ import kotlinx.coroutines.launch
 class SalesFragment : Fragment() {
 
     private var _binding: FragmentSalesBinding? = null
-    private val binding get() = _binding!!
+    private val binding get() = _binding
+
     private lateinit var db: AppDatabase
     private lateinit var adapter: SalesAdapter
     private val saleItemsList = mutableListOf<SaleItem>()
@@ -33,7 +34,7 @@ class SalesFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentSalesBinding.inflate(inflater, container, false)
-        return binding.root
+        return binding!!.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -48,40 +49,48 @@ class SalesFragment : Fragment() {
 
     private fun setupRecyclerView() {
         adapter = SalesAdapter(saleItemsList)
-        binding.rvSaleItems.layoutManager = LinearLayoutManager(context)
-        binding.rvSaleItems.adapter = adapter
+        binding?.rvSaleItems?.layoutManager = LinearLayoutManager(context)
+        binding?.rvSaleItems?.adapter = adapter
     }
 
     private fun fetchProducts() {
-        lifecycleScope.launch {
-            allProducts = db.appDao().getAllProducts().first()
-            val productNames = allProducts.map { it.name }
-            val searchAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, productNames)
-            binding.etSearchProduct.setAdapter(searchAdapter)
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val products = db.appDao().getAllProducts().first()
+                allProducts = products
+                
+                binding?.let { b ->
+                    val productNames = allProducts.map { it.name }
+                    val searchAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, productNames)
+                    b.etSearchProduct.setAdapter(searchAdapter)
+                }
+            } catch (e: Exception) {
+                // Handle error
+            }
         }
     }
 
     private fun setupSearch() {
-        binding.etSearchProduct.setOnItemClickListener { parent, _, position, _ ->
+        binding?.etSearchProduct?.setOnItemClickListener { parent, _, position, _ ->
             val selectedName = parent.getItemAtPosition(position) as String
             selectedProduct = allProducts.find { it.name == selectedName }
         }
     }
 
     private fun setupListeners() {
-        binding.btnMenu.setOnClickListener { findNavController().navigateUp() }
+        binding?.btnMenu?.setOnClickListener { findNavController().navigateUp() }
         
-        binding.btnAddItem.setOnClickListener {
+        binding?.btnAddItem?.setOnClickListener {
             selectedProduct?.let { 
                 addProductToSale(it)
-                binding.etSearchProduct.setText("")
+                binding?.etSearchProduct?.setText("")
                 selectedProduct = null
             } ?: run {
                 Toast.makeText(context, "Selecciona un producto de la lista", Toast.LENGTH_SHORT).show()
             }
         }
 
-        binding.btnFinalize.setOnClickListener {
+        binding?.btnFinalize?.setOnClickListener {
             if (saleItemsList.isEmpty()) {
                 Toast.makeText(context, "No hay productos en la venta", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
@@ -115,13 +124,15 @@ class SalesFragment : Fragment() {
         val tax = subtotal * 0.10
         val total = subtotal + tax
 
-        binding.tvSubtotal.text = "$${String.format("%.2f", subtotal)}"
-        binding.tvTax.text = "$${String.format("%.2f", tax)}"
-        binding.tvTotal.text = "$${String.format("%.2f", total)}"
+        binding?.let { b ->
+            b.tvSubtotal.text = "$${String.format("%.2f", subtotal)}"
+            b.tvTax.text = "$${String.format("%.2f", tax)}"
+            b.tvTotal.text = "$${String.format("%.2f", total)}"
+        }
     }
 
     private fun finalizeSale() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val subtotal = saleItemsList.sumOf { it.price * it.quantity }
                 val tax = subtotal * 0.10
@@ -141,16 +152,19 @@ class SalesFragment : Fragment() {
                     }
                 }
 
-                Toast.makeText(context, "¡Venta realizada con éxito!", Toast.LENGTH_LONG).show()
-                
-                // Reiniciar interfaz para nueva venta sin cerrar la app
-                saleItemsList.clear()
-                adapter.updateList(saleItemsList)
-                calculateTotals()
-                fetchProducts() // Recargar stock actualizado para la búsqueda
+                if (_binding != null) {
+                    Toast.makeText(context, "¡Venta realizada con éxito!", Toast.LENGTH_LONG).show()
+                    
+                    saleItemsList.clear()
+                    adapter.updateList(saleItemsList)
+                    calculateTotals()
+                    fetchProducts()
+                }
                 
             } catch (e: Exception) {
-                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                if (_binding != null) {
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
         }
     }
